@@ -1,0 +1,26 @@
+[project]
+name = "garden-manager"
+version = "1.0.0"
+description = ""
+authors = [
+    {name = "Lottie Thomas",email = "lottiethomas94@hotmail.co.uk"}
+]
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "poetry-core (>=2.0.0,<3.0.0)",
+    "pytest (>=8.3.5,<9.0.0)"
+]
+
+[tool.poetry]
+packages = [
+    { include = "plant-catalogue" }
+]
+
+[tool.poetry.group.test.dependencies]
+pytest = "8.3.5"
+pytest-mock = "*"
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
