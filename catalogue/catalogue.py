@@ -1,19 +1,19 @@
-from typing import Union, Any
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 
-from .plant import Plant
-from uuid import uuid4, UUID
+from .plant import Plant, PlantList
+from uuid import UUID
 
 app = FastAPI()
 
-plants: list[Plant] = []
+plants: PlantList = PlantList([])
 
 
-@app.get("/plants", response_model=Union[list[Plant], Plant])
+@app.get("/plants", response_model=PlantList | Plant)
 def get_plants(name: str | None = None) -> Any:
     if name:
-        for plant in plants:
+        for plant in plants.root:
             if plant.name == name:
                 return plant
         raise HTTPException(status_code=404, detail=f'Plant with name {name} could not be found')
@@ -23,5 +23,5 @@ def get_plants(name: str | None = None) -> Any:
 
 @app.post("/plants")
 def add_plant(plant: Plant) -> UUID:
-    plants.append(plant)
+    plants.root.append(plant)
     return plant.id
