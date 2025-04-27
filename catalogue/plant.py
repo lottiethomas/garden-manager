@@ -18,3 +18,6 @@ class PlantList(RootModel[List[Plant]]):
 
     def __getitem__(self, item):
         return self.root[item]
+
+    def append(self, item):
+        self.root.append(item)
