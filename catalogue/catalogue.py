@@ -1,27 +1,53 @@
-from typing import Any
+from contextlib import asynccontextmanager
+from typing import Any, Annotated
+from fastapi import FastAPI, HTTPException, Depends
+from sqlmodel import create_engine, SQLModel, Session, select
+from sqlalchemy import Select
 
-from fastapi import FastAPI, HTTPException
+from .plant import Plant, PlantPublic
 
-from .plant import Plant, PlantList
-from uuid import UUID
+sqlite_file_name = "database.db"
+sqlite_url = f"sqlite:///{sqlite_file_name}"
 
-app = FastAPI()
+connect_args = {"check_same_thread": False}
+engine = create_engine(sqlite_url, connect_args=connect_args)
 
-plants: PlantList = PlantList([])
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
 
 
-@app.get("/plants", response_model=PlantList | Plant)
-def get_plants(name: str | None = None) -> Any:
+def get_session():
+    with Session(engine) as session:
+        yield session
+
+
+SessionDep = Annotated[Session, Depends(get_session)]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    create_db_and_tables()
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+
+@app.get("/plants", response_model=list[PlantPublic] | PlantPublic)
+def get_plants(session: SessionDep, name: str | None = None) -> Any:
     if name:
-        for plant in plants:
-            if plant.name == name:
-                return plant
-        raise HTTPException(status_code=404, detail=f'Plant with name {name} could not be found')
+        statement: Select = select(Plant).where(Plant.name == name)
+        plant = session.exec(statement).first()
+        if not plant:
+            raise HTTPException(status_code=404, detail=f'Plant with name {name} could not be found')
+        return plant
     else:
-        return plants
+        return session.exec(select(Plant)).all()
 
 
-@app.post("/plants")
-def add_plant(plant: Plant) -> UUID:
-    plants.append(plant)
-    return plant.id
+@app.post("/plants", response_model=PlantPublic)
+def add_plant(plant: Plant, session: SessionDep) -> Plant:
+    session.add(plant)
+    session.commit()
+    session.refresh(plant)
+    return plant

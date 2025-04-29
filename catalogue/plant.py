@@ -1,23 +1,13 @@
-import uuid
-from typing import List, Iterator
-
-from pydantic import BaseModel, UUID4, Field, RootModel
+from sqlmodel import SQLModel, Field
 
 
-class Plant(BaseModel):
-    id: UUID4 = Field(default_factory=uuid.uuid4)
+class PlantBase(SQLModel):
     name: str
 
 
-class PlantList(RootModel[List[Plant]]):
-    def __init__(self, plants: List[Plant]):
-        super().__init__(plants)
+class Plant(PlantBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
 
-    def __iter__(self) -> Iterator[Plant]:
-        return iter(self.root)
 
-    def __getitem__(self, item) -> Plant:
-        return self.root[item]
-
-    def append(self, item) -> None:
-        self.root.append(item)
+class PlantPublic(PlantBase):
+    id: int
